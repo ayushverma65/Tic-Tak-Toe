@@ -1,0 +1,109 @@
+"""Human-vs-computer Tic-Tac-Toe with minimax and alpha-beta pruning."""
+
+from __future__ import annotations
+
+from math import inf
+
+WIN_LINES = ((0, 1, 2), (3, 4, 5), (6, 7, 8),
+             (0, 3, 6), (1, 4, 7), (2, 5, 8),
+             (0, 4, 8), (2, 4, 6))
+HUMAN, AI, EMPTY = "X", "O", " "
+
+
+def winner(board: list[str]) -> str | None:
+    for a, b, c in WIN_LINES:
+        if board[a] != EMPTY and board[a] == board[b] == board[c]:
+            return board[a]
+    return None
+
+
+def available(board: list[str]) -> list[int]:
+    return [i for i, value in enumerate(board) if value == EMPTY]
+
+
+def minimax(board: list[str], is_maximizing: bool, alpha: float, beta: float, depth: int = 0) -> int:
+    result = winner(board)
+    if result == AI:
+        return 10 - depth
+    if result == HUMAN:
+        return depth - 10
+    moves = available(board)
+    if not moves:
+        return 0
+
+    if is_maximizing:
+        best = -inf
+        for move in moves:
+            board[move] = AI
+            best = max(best, minimax(board, False, alpha, beta, depth + 1))
+            board[move] = EMPTY
+            alpha = max(alpha, best)
+            if beta <= alpha:
+                break
+        return int(best)
+
+    best = inf
+    for move in moves:
+        board[move] = HUMAN
+        best = min(best, minimax(board, True, alpha, beta, depth + 1))
+        board[move] = EMPTY
+        beta = min(beta, best)
+        if beta <= alpha:
+            break
+    return int(best)
+
+
+def best_move(board: list[str]) -> int:
+    """Return the strongest available move for O."""
+    choices = available(board)
+    if not choices:
+        raise ValueError("No legal moves remain")
+    scored = []
+    for move in choices:
+        board[move] = AI
+        score = minimax(board, False, -inf, inf, 1)
+        board[move] = EMPTY
+        scored.append((score, move))
+    return max(scored)[1]
+
+
+def display(board: list[str]) -> None:
+    cells = [str(i + 1) if cell == EMPTY else cell for i, cell in enumerate(board)]
+    print(f" {cells[0]} | {cells[1]} | {cells[2]}\n---+---+---\n {cells[3]} | {cells[4]} | {cells[5]}\n---+---+---\n {cells[6]} | {cells[7]} | {cells[8]}")
+
+
+def main() -> None:
+    board = [EMPTY] * 9
+    print("Tic-Tac-Toe: you are X; the computer is O. Choose squares 1-9 (q to quit).")
+    display(board)
+    while True:
+        entry = input("Your move: ").strip().lower()
+        if entry == "q":
+            print("Game ended. Thanks for playing!")
+            return
+        if entry not in {str(i) for i in range(1, 10)} or board[int(entry) - 1] != EMPTY:
+            print("Choose an empty square numbered 1-9.")
+            continue
+        board[int(entry) - 1] = HUMAN
+        display(board)
+        if winner(board) == HUMAN:
+            print("You win!")
+            return
+        if not available(board):
+            print("It's a draw!")
+            return
+
+        move = best_move(board)
+        board[move] = AI
+        print(f"Computer chooses {move + 1}:")
+        display(board)
+        if winner(board) == AI:
+            print("Computer wins!")
+            return
+        if not available(board):
+            print("It's a draw!")
+            return
+
+
+if __name__ == "__main__":
+    main()
